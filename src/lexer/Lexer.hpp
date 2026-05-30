@@ -55,13 +55,21 @@ struct Token{
 
 class Lexer{
 public:
-    explicit Lexer(std::istream& input):input_(input){consume();}
+    explicit Lexer(std::istream& input):input_(input),line_(1),col_(0){consume();}
     Token nextToken();
 private:
-void consume(){
-    ch=input_.get();
-}
-std::istream& input_;
-char ch;
+    void consume(){
+        if(ch_=='\n'){
+            line_++;
+            col_=0;
+        }else{
+            col_++;
+        }
+        ch_=input_.get();
+    }
+    std::istream& input_;
+    char ch_;
+    int line_=1;
+    int col_=0;
 
 };
