@@ -1,0 +1,6 @@
+var x int = 42 ;
+var msg bool = true ;
+
+func main() {
+    println("hola mundo") ;
+}
