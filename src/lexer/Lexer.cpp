@@ -20,6 +20,9 @@ Token Lexer::nextToken(){
                 consume();
                 while(true){
                     if(ch_==EOF){
+                        throw std::runtime_error(
+                        "Error línea " + std::to_string(line_) + 
+                        ": comentario multilínea sin cerrar");
                         break;
                     }
                     if(ch_=='*'){

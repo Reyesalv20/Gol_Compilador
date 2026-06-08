@@ -207,7 +207,7 @@ void Parser::parseArg(){
     parseExpr();
 
 }
-//aqui
+
 void Parser::parseExpr(){
     parseOrExpr();
 }
@@ -267,6 +267,7 @@ void Parser::parseRelOp(){
 void Parser::parseAddExpr(){
     parseMulExpr();
     while(current_.tokenId==TokenId::OP_ADD||current_.tokenId==TokenId::OP_SUB){
+        consume();
         parseMulExpr();
     }
 }
@@ -304,6 +305,11 @@ void Parser::parsePrimary(){
         consume();
         parseExpr();
         expect(TokenId::CLOSE_PAREN);
+    }else {
+        throw std::runtime_error(
+            "Error línea " + std::to_string(current_.line) +
+            ": expresión inválida '" + current_.text + "'"
+        );
     }
 
 }

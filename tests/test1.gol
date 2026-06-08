@@ -1,4 +1,3 @@
-var x int = 42
 func main() {
-    println("hola") ;
+    var x int = + ;
 }
