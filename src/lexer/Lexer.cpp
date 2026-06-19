@@ -48,12 +48,24 @@ Token Lexer::nextToken(){
                if(ch_=='\\'){
                     l+=ch_;
                     consume();
+                    if(ch_==EOF){
+                        throw std::runtime_error(
+                        "Error línea " + std::to_string(line_) + 
+                        ": tabulacion invalida");
+                        break;
+                    }
                     l+=ch_;
                     consume();
                }else{
                   l+=ch_;
                    consume();
                }
+            }
+            if(ch_==EOF){
+                throw std::runtime_error(
+                "Error línea " + std::to_string(line_) + 
+                ": string lit sin cerrar");
+                break;
             }
             l+="\"";
             consume();

@@ -3,7 +3,7 @@
 
 void Parser::expect(TokenId expected){
     if(current_.tokenId!=expected){
-        throw std::runtime_error("Error en linea"+std::to_string(current_.line)+" :token inesperado ' "+ current_.text +" '");
+        throw std::runtime_error("Error en linea "+std::to_string(current_.line)+" :token inesperado ' "+ current_.text +" '");
     }
     consume();
 
@@ -96,14 +96,7 @@ void Parser::parseStmt(){
     if(current_.tokenId==TokenId::KW_VAR){
         parseVarDecl();
     }else if(current_.tokenId==TokenId::IDENT){
-        expect(TokenId::IDENT);
-        if(current_.tokenId==TokenId::OP_SHORT_DECL){
-            parseShortDecl();
-        }else if(current_.tokenId==TokenId::OP_ASSIGN){
-            parseAssignStmt();
-        }else if(current_.tokenId==TokenId::OPEN_PAR){
-            parseCallStmt();
-        }
+        consume();
     }else if(current_.tokenId==TokenId::KW_IF){
         parseIfStmt();
     }else if(current_.tokenId==TokenId::KW_FOR){
@@ -116,6 +109,15 @@ void Parser::parseStmt(){
 
 }
 
+void Parser::parseIdentStmt(){
+    if(current_.tokenId==TokenId::OP_SHORT_DECL){
+            parseShortDecl();
+        }else if(current_.tokenId==TokenId::OP_ASSIGN){
+            parseAssignStmt();
+        }else if(current_.tokenId==TokenId::OPEN_PAR){
+            parseCallStmt();
+    }
+}
 void Parser::parseShortDecl(){
     expect(TokenId::OP_SHORT_DECL);
     parseExpr();
@@ -132,17 +134,19 @@ void Parser::parseIfStmt(){
     expect(TokenId::KW_IF);  
     parseExpr();
     parseBlock();
-    while(current_.tokenId==TokenId::KW_ELSE){
+    if(current_.tokenId==TokenId::KW_ELSE){
         consume();            
-        if(current_.tokenId==TokenId::KW_IF){
-            consume();         
-            parseExpr();
-            parseBlock();
-        } else {
-            parseBlock();      
-            break;            
-        }
+        parseIfStmtPrime();
     }
+}
+
+void Parser::parseIfStmtPrime(){
+    if(current_.tokenId==TokenId::KW_IF){
+        parseIfStmt();
+    }else if(current_.tokenId==TokenId::OPEN_BRACE){
+        parseBlock();
+    }
+
 }
 
 void Parser::parseForStmt(){
@@ -292,9 +296,7 @@ void Parser::parseUnaryExpr(){
 void Parser::parsePrimary(){
     if(current_.tokenId==TokenId::IDENT){
         consume();
-        if(current_.tokenId==TokenId::OPEN_PAR){
-            parseCallExpr();
-        }
+        parsePrimaryPrime();
     }else if(current_.tokenId==TokenId::KW_TRUE){
         consume();
     }else if(current_.tokenId==TokenId::KW_FALSE){
@@ -307,11 +309,16 @@ void Parser::parsePrimary(){
         expect(TokenId::CLOSE_PAREN);
     }else {
         throw std::runtime_error(
-            "Error línea " + std::to_string(current_.line) +
-            ": expresión inválida '" + current_.text + "'"
+            "Error linea " + std::to_string(current_.line) +
+            ": expresion invalida '" + current_.text + "'"
         );
     }
 
+}
+void Parser::parsePrimaryPrime(){
+    if(current_.tokenId!=TokenId::OPEN_PAR){
+        parseCallExpr();
+    }
 }
 
 void Parser::parseCallExpr(){

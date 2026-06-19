@@ -19,9 +19,11 @@ private:
     void parseParam();
     void parseBlock();
     void parseStmt();
+    void parseIdentStmt();
     void parseShortDecl();
     void parseAssignStmt();
     void parseIfStmt();
+    void parseIfStmtPrime();
     void parseForStmt();
     void parseReturnStmt();
     void parseCallStmt();
@@ -40,6 +42,7 @@ private:
     void parseUnaryExpr();
     void parsePrimary();
     void parseCallExpr();
+    void parsePrimaryPrime();
 
     void consume(){
         current_=lexer_.nextToken();

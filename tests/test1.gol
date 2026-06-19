@@ -1,3 +1,8 @@
-func main() {
-    var x int = + ;
+
+var n int = 5 ;
+var result int = 1 ;
+var i int = 1 ;
+
+func main(){
+    println(");
 }
