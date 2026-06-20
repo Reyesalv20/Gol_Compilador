@@ -212,7 +212,7 @@ void Parser::parseArg(){
 
 }
 
-void Parser::parseExpr(){
+Expr* Parser::parseExpr(){
     parseOrExpr();
 }
 
@@ -293,19 +293,28 @@ void Parser::parseUnaryExpr(){
     }
 }
 
-void Parser::parsePrimary(){
+Expr* Parser::parsePrimary(){
     if(current_.tokenId==TokenId::IDENT){
+        std::string name=current_.text;
         consume();
-        parsePrimaryPrime();
+        return parsePrimaryPrime(name);
     }else if(current_.tokenId==TokenId::KW_TRUE){
+        bool value=true;
         consume();
+        return new BoolLiteralExpr(value);
     }else if(current_.tokenId==TokenId::KW_FALSE){
+        bool value=false;
         consume();
+        return new BoolLiteralExpr(value);
     }else if(current_.tokenId==TokenId::INT_LIT){
+        
+        int value=std::stoi(current_.text);
         consume();
+        return new IntLiteralExpr(value);
+
     }else if(current_.tokenId==TokenId::OPEN_PAR){
         consume();
-        parseExpr();
+        Expr* expr=parseExpr();
         expect(TokenId::CLOSE_PAREN);
     }else {
         throw std::runtime_error(
@@ -315,13 +324,14 @@ void Parser::parsePrimary(){
     }
 
 }
-void Parser::parsePrimaryPrime(){
-    if(current_.tokenId!=TokenId::OPEN_PAR){
-        parseCallExpr();
+Expr* Parser::parsePrimaryPrime(const std::string& name){
+    if(current_.tokenId==TokenId::OPEN_PAR){
+        return parseCallExpr(name);
     }
+    return new VariableExpr(name);
 }
 
-void Parser::parseCallExpr(){
+Expr* Parser::parseCallExpr(const std::string& name){
     expect(TokenId::OPEN_PAR);
     if(current_.tokenId!=TokenId::CLOSE_PAREN){
         parseArgList();

@@ -1,5 +1,6 @@
 #pragma once
 #include "../lexer/Lexer.hpp"
+#include "AST.hpp"
 #include <stdexcept>
 
 class Parser{
@@ -31,7 +32,7 @@ private:
     void parsePrintArg();
     void parseArgList();
     void parseArg();
-    void parseExpr();
+    Expr* parseExpr();
     void parseOrExpr();
     void parseAndExpr();
     void parseNotExpr();
@@ -40,9 +41,9 @@ private:
     void parseAddExpr();
     void parseMulExpr();
     void parseUnaryExpr();
-    void parsePrimary();
-    void parseCallExpr();
-    void parsePrimaryPrime();
+    Expr* parsePrimary();
+    Expr* parseCallExpr(const std::string& name);
+    Expr* parsePrimaryPrime(const std::string& name);
 
     void consume(){
         current_=lexer_.nextToken();
