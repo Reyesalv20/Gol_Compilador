@@ -8,7 +8,21 @@ enum class NodeKind{
     BinaryExpr,
     Call,
     UnaryExpr,
-    AddressOfExpr
+    AddressOfExpr,
+    
+    Program,
+    
+    VarDecl,
+    FuncDecl,
+
+    BlockSmt,
+    ReturnStmt,
+    IfStmt,
+    ForStmt,
+    ShortDecl,
+    AssignStmt,
+    PrintStmt,
+    CallStmt
 };
 enum class BinaryOp{
     Add,
@@ -22,11 +36,15 @@ enum class BinaryOp{
     Gte,
     Or,
     And,
-    Not,
     Diff,
     Eq,
 };
 
+enum class Type{
+    Int,
+    Bool,
+    Void
+};
 struct ASTNode{
 
     virtual ~ASTNode()=default;
@@ -106,5 +124,152 @@ struct AddressOfExpr:Expr{
     explicit AddressOfExpr(Expr* op):operand(op){}
     NodeKind kind() override{
         return NodeKind::AddressOfExpr;
+    }
+};
+
+struct Stmt:ASTNode{
+
+};
+
+struct Decl:ASTNode{
+    
+};
+
+struct Program: ASTNode{
+    std::vector<Decl*> decls;
+    
+    NodeKind kind() override{
+        return NodeKind::Program;
+    }
+};
+
+struct VarDecl: Decl,Stmt{
+
+    std::string name_;
+    Type type_;
+    Expr* init_;
+
+    explicit VarDecl(const std::string& name,Type type,Expr* init):name_(name),type_(type),init_(init){}
+    NodeKind kind() override{
+        return NodeKind::VarDecl;
+    }
+};
+
+struct Param{
+  bool isRef_;
+  std::string name_;
+  Type type_;  
+
+  explicit Param(bool isRef,std::string name,Type type):isRef_(isRef),name_(name),type_(type){}
+};
+
+struct BlockStmt : Stmt{
+    std::vector<Stmt*> stms_;
+
+    explicit BlockStmt(std::vector<Stmt*> stms):stms_(stms){}
+    NodeKind kind() override{
+        return NodeKind::BlockSmt;
+    }
+};
+
+struct FuncDecl: Decl{
+
+    std::string name_;
+    std::vector<Param> params_;
+    Type type_;
+    BlockStmt* block_;
+    
+    explicit FuncDecl(const std::string& name,std::vector<Param> params,Type type,BlockStmt* block):name_(name),params_(params),type_(type),block_(block){}
+    NodeKind kind() override{
+        return NodeKind::FuncDecl;
+    }
+};
+
+struct ShortDecl: Stmt{
+    std::string name_;
+    Expr* expr_;
+
+    explicit ShortDecl(const std::string& name,Expr* expr):name_(name),expr_(expr){}
+
+    NodeKind kind() override{
+        return NodeKind::ShortDecl;
+    }
+
+};
+
+struct AssignStmt: Stmt{
+    std::string name_;
+    Expr* expr_;
+    explicit AssignStmt(const std::string& name,Expr* expr):expr_(expr),name_(name){}
+
+    NodeKind kind() override{
+        return NodeKind::AssignStmt;
+    }
+
+};
+
+struct ReturnStmt: Stmt{
+    Expr* expr_;
+    explicit ReturnStmt(Expr* expr):expr_(expr){}
+
+    NodeKind kind() override{
+        return NodeKind::ReturnStmt;
+    }
+};
+
+struct ForStmt: Stmt{
+    Expr* expr_;
+    BlockStmt* block_;
+    explicit ForStmt(Expr* expr,BlockStmt* block):expr_(expr),block_(block){}
+
+    NodeKind kind() override{
+        return NodeKind::ForStmt;
+    }
+};
+struct ElseIf{
+    Expr* condition_;
+    BlockStmt* block_;
+};
+struct IfStmt: Stmt{
+    Expr* expr_;
+    BlockStmt* thenblock_;
+    std::vector<ElseIf> elseIfs_;
+    BlockStmt* elseBlock_;
+    explicit IfStmt(Expr* expr,BlockStmt* block,const std::vector<ElseIf>& elseIfs,BlockStmt* elseBlock):
+    expr_(expr),thenblock_(block),elseIfs_(elseIfs),elseBlock_(elseBlock){}
+
+    NodeKind kind() override{
+        return NodeKind::IfStmt;
+    }
+};
+
+struct CallStmt : Stmt
+{
+    CallExpr* call_;
+    explicit CallStmt(CallExpr* call): call_(call){}
+    NodeKind kind() override{
+        return NodeKind::CallStmt;
+    }
+};
+
+struct PrintArg
+{
+    bool isString_;
+
+    std::string string_;
+
+    Expr* expr_;
+};
+
+struct PrintStmt : Stmt
+{
+    bool isPrintLn_;
+
+    std::vector<PrintArg> args_;
+
+    PrintStmt(bool isPrintLn,const std::vector<PrintArg>& args): isPrintLn_(isPrintLn),args_(args){}
+
+    NodeKind kind() override{
+        return NodeKind::PrintStmt;
     }
 };

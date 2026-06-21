@@ -9,94 +9,116 @@ void Parser::expect(TokenId expected){
 
 }
 
-void Parser::parse(){
-    parseProgram();
+Program* Parser::parse(){
+    Program* program=parseProgram();
     expect(TokenId::END_OF_FILE);
+    return program;
 }
 
-void Parser::parseProgram(){
+Program* Parser::parseProgram(){
+    Program* program=new Program();
     while(current_.tokenId!=TokenId::END_OF_FILE){
-        parseTopDecl();
+        program->decls.push_back(parseTopDecl());
     }
+    return program;
 }
 
-void Parser::parseTopDecl(){
+Decl* Parser::parseTopDecl(){
     if(current_.tokenId==TokenId::KW_FUNC){
-        parseFuncDecl();
+        return parseFuncDecl();
     }else if(current_.tokenId==TokenId::KW_VAR){
-        parseVarDecl();
+        return parseVarDecl();
     }else{
        throw std::runtime_error("Error en linea "+std::to_string(current_.line)+ "se esperaba 'func' o 'var', llego ' "+current_.text+" '");
     }
 }
 
-void Parser::parseVarDecl(){
+VarDecl* Parser::parseVarDecl(){
    
     expect(TokenId::KW_VAR);
+    
+    std::string name=current_.text;
     expect(TokenId::IDENT);
-    parseType();
-
+    Type type=parseType();
+    Expr* expr=nullptr;
     if(current_.tokenId==TokenId::OP_ASSIGN){
         consume();
-        parseExpr();
+        expr= parseExpr();
     }
    
     expect(TokenId::SEMICOLON);
-    
+    return new VarDecl(name,type,expr);
 }
 
-void Parser::parseType(){
-    if(current_.tokenId==TokenId::KW_INT||current_.tokenId==TokenId::KW_BOOL){
+Type Parser::parseType(){
+    if(current_.tokenId==TokenId::KW_INT){
         consume();
+        return Type::Int;
+    }else if(current_.tokenId==TokenId::KW_BOOL){
+        consume();
+        return Type::Bool;
     }else{
         throw std::runtime_error("Error en la linea "+std::to_string(current_.line)+" se esperaba 'int' o 'bool', llego ' "+current_.text+" '");
     }
 }
 
-void Parser::parseFuncDecl(){
+FuncDecl* Parser::parseFuncDecl(){
     expect(TokenId::KW_FUNC);
+    std::string name=current_.text;
     expect(TokenId::IDENT);
     expect(TokenId::OPEN_PAR);
+    std::vector<Param> params;
     if(current_.tokenId==TokenId::KW_REF||current_.tokenId==TokenId::IDENT){
-        parseParamList();
+        params=parseParamList();
     }
     expect(TokenId::CLOSE_PAREN);
+    Type type=Type::Void;
     if(current_.tokenId==TokenId::KW_INT||current_.tokenId==TokenId::KW_BOOL){
-        parseType();
+        type=parseType();
     }
-    parseBlock();
+    BlockStmt* block=parseBlock();
+
+    return new FuncDecl(name,params,type,block);
 }
 
-void Parser::parseParamList(){
-    parseParam();
+std::vector<Param> Parser::parseParamList(){
+    std::vector<Param> params;
+    params.push_back(parseParam());
     while(current_.tokenId==TokenId::COMMA){
         consume();
-        parseParam();
+        params.push_back(parseParam());
     }
+    return params;
 }
-void Parser::parseParam(){
+Param Parser::parseParam(){
+    bool isRef = false;
     if(current_.tokenId==TokenId::KW_REF){
         consume();
+        isRef=true;
     }
+    std::string name=current_.text;
     expect(TokenId::IDENT);
-    parseType();
-
+    Type type=parseType();
+    return Param(isRef,name,type);
 }
 
 
-void Parser::parseBlock(){
+BlockStmt* Parser::parseBlock(){
+   std::vector<Stmt*> stmts;
    expect(TokenId::OPEN_BRACE);
         while(current_.tokenId==TokenId::KW_VAR||current_.tokenId==TokenId::IDENT||current_.tokenId==TokenId::KW_IF||current_.tokenId==TokenId::KW_FOR||current_.tokenId==TokenId::KW_RETURN||current_.tokenId==TokenId::KW_PRINT||current_.tokenId==TokenId::KW_PRINTLN||current_.tokenId==TokenId::OPEN_PAR){
-            parseStmt();
+           stmts.push_back(parseStmt());
         }
     expect(TokenId::CLOSE_BRACE);
+    return new BlockStmt(stmts);
 }
 
-void Parser::parseStmt(){
+Stmt* Parser::parseStmt(){
     if(current_.tokenId==TokenId::KW_VAR){
         parseVarDecl();
     }else if(current_.tokenId==TokenId::IDENT){
         consume();
+        parseIdentStmt();
     }else if(current_.tokenId==TokenId::KW_IF){
         parseIfStmt();
     }else if(current_.tokenId==TokenId::KW_FOR){

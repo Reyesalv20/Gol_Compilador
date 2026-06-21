@@ -8,18 +8,18 @@ public:
     explicit Parser(Lexer& lexer):lexer_(lexer){
         current_=lexer_.nextToken();
     }
-    void parse();
+    Program* parse();
 
 private:
-    void parseProgram();
-    void parseTopDecl();
-    void parseVarDecl();
-    void parseType();
-    void parseFuncDecl();
-    void parseParamList();
-    void parseParam();
-    void parseBlock();
-    void parseStmt();
+    Program* parseProgram();
+    Decl* parseTopDecl();
+    VarDecl* parseVarDecl();
+    Type parseType();
+    FuncDecl* parseFuncDecl();
+    std::vector<Param> parseParamList();
+    Param parseParam();
+    BlockStmt* parseBlock();
+    Stmt* parseStmt();
     void parseIdentStmt();
     void parseShortDecl();
     void parseAssignStmt();
