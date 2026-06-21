@@ -6,7 +6,9 @@ enum class NodeKind{
     BoolLiteral,
     Variable,
     BinaryExpr,
-    Call
+    Call,
+    UnaryExpr,
+    AddressOfExpr
 };
 enum class BinaryOp{
     Add,
@@ -85,5 +87,24 @@ struct BinaryExpr:Expr{
 
     NodeKind kind() override{
         return NodeKind::BinaryExpr;
+    }
+};
+
+struct UnaryExpr:Expr{
+    char op;
+    Expr* operand;
+    explicit UnaryExpr(char operador,Expr* oper):op(operador),operand(oper){}
+
+    NodeKind kind() override{
+        return NodeKind::UnaryExpr;
+    }
+
+};
+
+struct AddressOfExpr:Expr{
+    Expr* operand;
+    explicit AddressOfExpr(Expr* op):operand(op){}
+    NodeKind kind() override{
+        return NodeKind::AddressOfExpr;
     }
 };

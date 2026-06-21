@@ -196,101 +196,142 @@ void Parser::parsePrintArg(){
     }
 }
 
-void Parser::parseArgList(){
-    parseArg();
+std::vector<Expr*> Parser::parseArgList(){
+    std::vector<Expr*> args;
+    args.push_back( parseArg());
     while(current_.tokenId==TokenId::COMMA){
         consume();
-        parseArg();
+        args.push_back(parseArg());
+        
     }
+    return args;
 }
 
-void Parser::parseArg(){
+Expr* Parser::parseArg(){
     if(current_.tokenId==TokenId::OP_ADDR){
         consume();
+        Expr* operand=parseExpr();
+        return new AddressOfExpr(operand);
     }
-    parseExpr();
+    return parseExpr();
 
 }
 
 Expr* Parser::parseExpr(){
-    parseOrExpr();
+    return parseOrExpr();
 }
 
 
-void Parser::parseOrExpr(){
-    parseAndExpr();
+Expr* Parser::parseOrExpr(){
+    Expr* left=parseAndExpr();
     while(current_.tokenId==TokenId::OP_OR){
         consume();
-        parseAndExpr();
+        Expr* right=parseAndExpr();
+        left=new BinaryExpr(BinaryOp::Or,left,right);
     }
+    return left;
 }
 
-void Parser::parseAndExpr(){
-    parseNotExpr();
+Expr* Parser::parseAndExpr(){
+    Expr* left=parseNotExpr();
     while(current_.tokenId==TokenId::OP_AND){
         consume();
-        parseNotExpr();
+        Expr* right=parseNotExpr();
+        left=new BinaryExpr(BinaryOp::And,left,right);
     }
+    return left;
 }
 
-void Parser::parseNotExpr(){
+Expr* Parser::parseNotExpr(){
     if(current_.tokenId==TokenId::OP_NOT){
         consume();
-        parseNotExpr();
-    }else{
-        parseRelExpr();
+        Expr* operand=parseNotExpr();
+        return new UnaryExpr('!',operand);
     }
+      return parseRelExpr();
+    
 }
 
-void Parser::parseRelExpr(){
-    parseAddExpr();
+Expr* Parser::parseRelExpr(){
+    Expr* left=parseAddExpr();
     if(current_.tokenId==TokenId::OP_EQ  || current_.tokenId==TokenId::OP_NEQ ||
        current_.tokenId==TokenId::OP_LT  || current_.tokenId==TokenId::OP_GT  ||
        current_.tokenId==TokenId::OP_LTE || current_.tokenId==TokenId::OP_GTE){
-        consume();
-        parseAddExpr();
+        BinaryOp op=parseRelOp();
+        Expr* right=parseAddExpr();
+        left=new BinaryExpr(op,left,right);
     }
+    return left;
 }
 
-void Parser::parseRelOp(){
+BinaryOp Parser::parseRelOp(){
     if(current_.tokenId==TokenId::OP_EQ){
         consume();
+        return BinaryOp::Eq;
     }else if(current_.tokenId==TokenId::OP_LT ){
         consume();
+        return BinaryOp::Lt;
     }else if(current_.tokenId==TokenId::OP_LTE ){
         consume();
+        return BinaryOp::Lte;
     }else if(current_.tokenId==TokenId::OP_NEQ){
         consume();
+        return BinaryOp::Diff;
     }else if(current_.tokenId==TokenId::OP_GT){
         consume();
+        return BinaryOp::Gt;
     }else if(current_.tokenId==TokenId::OP_GTE){
         consume(); 
+        return BinaryOp::Gte;
+    }else{
+        throw std::runtime_error("Operador relacional invalido");
     }
 }
 
-void Parser::parseAddExpr(){
-    parseMulExpr();
+Expr* Parser::parseAddExpr(){
+    BinaryOp op;
+    Expr* left=parseMulExpr();
     while(current_.tokenId==TokenId::OP_ADD||current_.tokenId==TokenId::OP_SUB){
+        if(current_.tokenId==TokenId::OP_ADD){
+            op=BinaryOp::Add;
+        }else if(current_.tokenId==TokenId::OP_SUB){
+            op=BinaryOp::Sub;
+        }
         consume();
-        parseMulExpr();
+        Expr* right=parseMulExpr();
+        left=new BinaryExpr(op,left,right);
     }
+    return left;
 }
 
-void Parser::parseMulExpr(){
-    parseUnaryExpr();
+Expr* Parser::parseMulExpr(){
+    BinaryOp op;
+    Expr* left=parseUnaryExpr();
     while(current_.tokenId==TokenId::OP_MOD||current_.tokenId==TokenId::OP_DIV||current_.tokenId==TokenId::OP_MUL){
+        if(current_.tokenId==TokenId::OP_MOD){
+            op=BinaryOp::Mod;
+        }else if(current_.tokenId==TokenId::OP_DIV){
+             op=BinaryOp::Div;
+        }else if(current_.tokenId==TokenId::OP_MUL){
+             op=BinaryOp::Mult;
+        }
+
         consume();
-        parseUnaryExpr();
+        Expr* right= parseUnaryExpr();
+        left=new BinaryExpr(op,left,right);
     }
+    return left;
 }
 
-void Parser::parseUnaryExpr(){
+Expr* Parser::parseUnaryExpr(){
     if(current_.tokenId==TokenId::OP_SUB){
         consume();
-        parseUnaryExpr();
-    }else{
-        parsePrimary();
+        Expr* operand= parseUnaryExpr();
+        return new UnaryExpr('-',operand);
     }
+    
+    return parsePrimary();
+    
 }
 
 Expr* Parser::parsePrimary(){
@@ -316,6 +357,7 @@ Expr* Parser::parsePrimary(){
         consume();
         Expr* expr=parseExpr();
         expect(TokenId::CLOSE_PAREN);
+        return expr;
     }else {
         throw std::runtime_error(
             "Error linea " + std::to_string(current_.line) +
@@ -333,10 +375,15 @@ Expr* Parser::parsePrimaryPrime(const std::string& name){
 
 Expr* Parser::parseCallExpr(const std::string& name){
     expect(TokenId::OPEN_PAR);
+    std::vector<Expr*> args;
     if(current_.tokenId!=TokenId::CLOSE_PAREN){
-        parseArgList();
+       args=parseArgList();
     }
     expect(TokenId::CLOSE_PAREN);
+    CallExpr* call=new CallExpr(name);
+    call->arguments=args;
+    return call;
+
 }
 
 
