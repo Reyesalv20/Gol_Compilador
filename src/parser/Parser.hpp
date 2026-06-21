@@ -20,14 +20,14 @@ private:
     Param parseParam();
     BlockStmt* parseBlock();
     Stmt* parseStmt();
-    Stmt* parseIdentStmt(const std::string name);
-    ShortDecl* parseShortDecl(const std::string name);
-    AssignStmt* parseAssignStmt(const std::string name);
+    Stmt* parseIdentStmt(const std::string& name);
+    ShortDecl* parseShortDecl(const std::string& name);
+    AssignStmt* parseAssignStmt(const std::string& name);
     IfStmt* parseIfStmt();
     //void parseIfStmtPrime();
     ForStmt* parseForStmt();
     ReturnStmt* parseReturnStmt();
-    CallStmt* parseCallStmt(const std::string name);
+    CallStmt* parseCallStmt(const std::string& name);
     PrintStmt* parsePrintStmt();
     PrintArg parsePrintArg();
     std::vector<Expr*> parseArgList();

@@ -134,7 +134,7 @@ Stmt* Parser::parseStmt(){
 
 }
 
-Stmt* Parser::parseIdentStmt(const std::string name){
+Stmt* Parser::parseIdentStmt(const std::string& name){
     if(current_.tokenId==TokenId::OP_SHORT_DECL){
             return parseShortDecl(name);
     }else if(current_.tokenId==TokenId::OP_ASSIGN){
@@ -145,14 +145,14 @@ Stmt* Parser::parseIdentStmt(const std::string name){
          throw std::runtime_error("Error en la linea "+std::to_string(current_.line)+" llego tocken inesperado ' "+current_.text+" '");
     }
 }
-ShortDecl* Parser::parseShortDecl(const std::string name){
+ShortDecl* Parser::parseShortDecl(const std::string& name){
     expect(TokenId::OP_SHORT_DECL);
     Expr* expr=parseExpr();
     expect(TokenId::SEMICOLON);
     return new ShortDecl(name,expr);
 }
 
-AssignStmt* Parser::parseAssignStmt(const std::string name){
+AssignStmt* Parser::parseAssignStmt(const std::string& name){
     expect(TokenId::OP_ASSIGN);
     Expr* expr=parseExpr();
     expect(TokenId::SEMICOLON);
@@ -209,7 +209,7 @@ ReturnStmt* Parser::parseReturnStmt(){
     return new ReturnStmt(expr);
 }
 
-CallStmt* Parser::parseCallStmt(const std::string name){
+CallStmt* Parser::parseCallStmt(const std::string& name){
     expect(TokenId::OPEN_PAR);
     std::vector<Expr*> args;
     if(current_.tokenId!=TokenId::CLOSE_PAREN){
