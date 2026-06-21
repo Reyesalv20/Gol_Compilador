@@ -115,107 +115,150 @@ BlockStmt* Parser::parseBlock(){
 
 Stmt* Parser::parseStmt(){
     if(current_.tokenId==TokenId::KW_VAR){
-        parseVarDecl();
+        return parseVarDecl();
     }else if(current_.tokenId==TokenId::IDENT){
+        std::string name=current_.text;
         consume();
-        parseIdentStmt();
+        return parseIdentStmt(name);
     }else if(current_.tokenId==TokenId::KW_IF){
-        parseIfStmt();
+        return parseIfStmt();
     }else if(current_.tokenId==TokenId::KW_FOR){
-        parseForStmt();
+        return parseForStmt();
     }else if(current_.tokenId==TokenId::KW_RETURN){
-        parseReturnStmt();
+        return parseReturnStmt();
     }else if(current_.tokenId==TokenId::KW_PRINT||current_.tokenId==TokenId::KW_PRINTLN||current_.tokenId==TokenId::OPEN_PAR){
-        parsePrintStmt();
+        return parsePrintStmt();
+    }else{
+         throw std::runtime_error("Error en la linea "+std::to_string(current_.line)+" llego un token inesperado ' "+current_.text+" '");
     }
 
 }
 
-void Parser::parseIdentStmt(){
+Stmt* Parser::parseIdentStmt(const std::string name){
     if(current_.tokenId==TokenId::OP_SHORT_DECL){
-            parseShortDecl();
-        }else if(current_.tokenId==TokenId::OP_ASSIGN){
-            parseAssignStmt();
-        }else if(current_.tokenId==TokenId::OPEN_PAR){
-            parseCallStmt();
+            return parseShortDecl(name);
+    }else if(current_.tokenId==TokenId::OP_ASSIGN){
+            return parseAssignStmt(name);
+    }else if(current_.tokenId==TokenId::OPEN_PAR){
+            return parseCallStmt(name);
+    }else{
+         throw std::runtime_error("Error en la linea "+std::to_string(current_.line)+" llego tocken inesperado ' "+current_.text+" '");
     }
 }
-void Parser::parseShortDecl(){
+ShortDecl* Parser::parseShortDecl(const std::string name){
     expect(TokenId::OP_SHORT_DECL);
-    parseExpr();
+    Expr* expr=parseExpr();
     expect(TokenId::SEMICOLON);
+    return new ShortDecl(name,expr);
 }
 
-void Parser::parseAssignStmt(){
+AssignStmt* Parser::parseAssignStmt(const std::string name){
     expect(TokenId::OP_ASSIGN);
-    parseExpr();
+    Expr* expr=parseExpr();
     expect(TokenId::SEMICOLON);
+    return new AssignStmt(name,expr);
 }
 
-void Parser::parseIfStmt(){
+IfStmt* Parser::parseIfStmt(){
     expect(TokenId::KW_IF);  
-    parseExpr();
-    parseBlock();
-    if(current_.tokenId==TokenId::KW_ELSE){
-        consume();            
-        parseIfStmtPrime();
-    }
-}
+    Expr* cond=parseExpr();
+    BlockStmt* thenBlock=parseBlock();
+    std::vector<ElseIf> elseIfs;
 
-void Parser::parseIfStmtPrime(){
+    BlockStmt* elseBlock=nullptr;
+    while(current_.tokenId==TokenId::KW_ELSE){
+        consume();
+        if(current_.tokenId==TokenId::KW_IF){
+            consume();
+            ElseIf branch;
+            branch.condition_ = parseExpr();
+            branch.block_ = parseBlock();
+            elseIfs.push_back(branch);
+        }else{
+            elseBlock=parseBlock();
+            break;
+        }            
+        
+    }
+    return new IfStmt(cond,thenBlock,elseIfs,elseBlock);
+}
+/*void Parser::parseIfStmtPrime(){
     if(current_.tokenId==TokenId::KW_IF){
         parseIfStmt();
     }else if(current_.tokenId==TokenId::OPEN_BRACE){
         parseBlock();
     }
 
-}
+} */
 
-void Parser::parseForStmt(){
+
+ForStmt* Parser::parseForStmt(){
     expect(TokenId::KW_FOR);
-    parseExpr();
-    parseBlock();
+    Expr* expr=parseExpr();
+    BlockStmt* block= parseBlock();
+    return new ForStmt(expr,block);
 }
 
-void Parser::parseReturnStmt(){
+ReturnStmt* Parser::parseReturnStmt(){
     expect(TokenId::KW_RETURN);
+    Expr* expr=nullptr;
     if(current_.tokenId!=TokenId::SEMICOLON){
-        parseExpr();
+        expr=parseExpr();
     }
     expect(TokenId::SEMICOLON);
+    return new ReturnStmt(expr);
 }
 
-void Parser::parseCallStmt(){
+CallStmt* Parser::parseCallStmt(const std::string name){
     expect(TokenId::OPEN_PAR);
+    std::vector<Expr*> args;
     if(current_.tokenId!=TokenId::CLOSE_PAREN){
-        parseArgList();
+        args=parseArgList();
     }
     expect(TokenId::CLOSE_PAREN);
     expect(TokenId::SEMICOLON);
+    CallExpr* call=new CallExpr(name);
+    call->arguments=args;
+
+    return new CallStmt(call);
 }
 
-void Parser::parsePrintStmt(){
-    if(current_.tokenId==TokenId::KW_PRINT||current_.tokenId==TokenId::KW_PRINTLN){
+PrintStmt* Parser::parsePrintStmt(){
+    bool isPrintLn=false;
+    if(current_.tokenId==TokenId::KW_PRINT){
         consume();
+        isPrintLn=false;
+    }else if(current_.tokenId==TokenId::KW_PRINTLN){
+         consume();
+         isPrintLn=true;
     }else{
         throw std::runtime_error("Error en la linea "+std::to_string(current_.line)+" se esperaba 'print' o 'println', llego ' "+current_.text+" '");
     }
     expect(TokenId::OPEN_PAR);
-    parsePrintArg();
+    std::vector<PrintArg> args;
+    args.push_back(parsePrintArg());
     while(current_.tokenId==TokenId::COMMA){
         consume();
-        parsePrintArg();
+        args.push_back(parsePrintArg());
     }
     expect(TokenId::CLOSE_PAREN);
     expect(TokenId::SEMICOLON);
+    return new PrintStmt(isPrintLn,args);
 }
 
-void Parser::parsePrintArg(){
+PrintArg Parser::parsePrintArg(){
+    PrintArg arg;
+    arg.isString_=false;
+    arg.string_="";
+    arg.expr_=nullptr;
     if(current_.tokenId==TokenId::STRING_LIT){
+        arg.string_=current_.text;
+        arg.isString_=true;
         consume();
     }else{
-        parseExpr();
+       arg.expr_=parseExpr();
     }
+    return arg;
 }
 
 std::vector<Expr*> Parser::parseArgList(){
