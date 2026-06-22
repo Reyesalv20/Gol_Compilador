@@ -4,7 +4,4 @@ var result int = 1 ;
 var x int = 1 ;
 
 func main(){
-    var n int=7;
-    r=6;
-    println("");
 }

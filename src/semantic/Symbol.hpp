@@ -3,6 +3,7 @@
 #include "../parser/AST.hpp"
 
 struct Symbol{
+    virtual ~Symbol() = default;
     std::string name_;
     Type type_;
 

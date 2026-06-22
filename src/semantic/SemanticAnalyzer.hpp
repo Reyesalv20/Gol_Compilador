@@ -14,6 +14,7 @@ class SemanticAnalyzer{
     }
     private:
 
+    Type currentReturnType_ = Type::Void;
     SymbolTable symbols_;
     std::vector<std::string> errors_;
 
