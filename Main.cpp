@@ -2,6 +2,7 @@
 #include <fstream>
 #include "src/lexer/Lexer.hpp"
 #include "src/parser/Parser.hpp"
+#include "src/semantic/SemanticAnalyzer.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -18,7 +19,14 @@ int main(int argc, char* argv[]) {
     try {
         Lexer lexer(archivo);
         Parser parser(lexer);
-        parser.parse();
+        Program* program = parser.parse();
+        SemanticAnalyzer sema;
+
+        sema.analyze(program);
+
+        for(const auto& error : sema.errors()){
+            std::cout << error << std::endl;
+        }
         std::cout << "Sintaxis correcta" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

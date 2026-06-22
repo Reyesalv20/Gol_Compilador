@@ -8,4 +8,6 @@ add_executable(gol
     Main.cpp
     src/lexer/Lexer.cpp
     src/parser/Parser.cpp
+    src/semantic/SemanticAnalyzer.cpp
+    src/semantic/SymbolTable.cpp
 )
