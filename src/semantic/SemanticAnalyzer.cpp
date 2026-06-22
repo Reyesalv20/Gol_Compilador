@@ -100,6 +100,54 @@ void SemanticAnalyzer::analyzeStmt(Stmt* stmt){
             if(returnType!=currentReturnType_){
                 reportError("Return Type mismatch ");
             }
+    }else if(auto* call =dynamic_cast<CallStmt*>(stmt)){
+        
+        analyzeExpr(call->call_);
+
+    }else if(auto* ifStmt =dynamic_cast<IfStmt*>(stmt)){
+        Type condType =analyzeExpr(ifStmt->expr_);
+
+        if(condType != Type::Bool){
+            reportError("Condicion de if debe ser bool");
+        }
+
+        for(auto* stmt :ifStmt->thenblock_->stms_){
+            analyzeStmt(stmt);
+        }
+
+        for(auto& elseif :ifStmt->elseIfs_){
+            Type elseifType =analyzeExpr(elseif.condition_);
+
+            if(elseifType != Type::Bool){
+                reportError("Condicion de else if debe ser bool");
+            }
+
+            for(auto* stmt :elseif.block_->stms_){
+                analyzeStmt(stmt);
+            }
+        }
+
+        if(ifStmt->elseBlock_ != nullptr){
+            for(auto* stmt :ifStmt->elseBlock_->stms_){
+                analyzeStmt(stmt);
+            }
+        }
+    }else if(auto* forStmt =dynamic_cast<ForStmt*>(stmt)){
+        Type condType =analyzeExpr(forStmt->expr_);
+
+        if(condType != Type::Bool){
+            reportError("Condicion de for debe ser bool");
+        }
+
+        for(auto* stmt :forStmt->block_->stms_){
+            analyzeStmt(stmt);
+        }
+    }else if(auto* printStmt =dynamic_cast<PrintStmt*>(stmt)){
+        for(auto& arg :printStmt->args_){
+            if(!arg.isString_){
+                analyzeExpr(arg.expr_);
+            }
+        }
     }
 }
 
@@ -133,26 +181,57 @@ Type SemanticAnalyzer::analyzeExpr(Expr* expr){
         return leftType;
     }
 
-    if(auto* call=dynamic_cast<CallExpr*>(expr)){
-        
-        Symbol* symbol = symbols_.lookup(call->functionName);
+    if(auto* call = dynamic_cast<CallExpr*>(expr)){
+        Symbol* symbol =symbols_.lookup(call->functionName);
 
-        if(symbol==nullptr){
-            reportError("Funcion no declarada "+call->functionName);
+        if(symbol == nullptr){
+            reportError( "Funcion no declarada: "+ call->functionName);
             return Type::Void;
         }
-        auto* func = dynamic_cast<FuncSymbol*>(symbol);
 
-        if(func==nullptr){
-            reportError(call->functionName+" no es una funcion");
+        FuncSymbol* func =dynamic_cast<FuncSymbol*>(symbol);
+
+        if(func == nullptr){
+            reportError(call->functionName +" no es una funcion");
             return Type::Void;
         }
-        
-        if(call->arguments.size()!=func->param_type_.size()){
-            reportError("Cantidad incorrecta de argumentos para: "+call->functionName);
+
+        if(call->arguments.size() !=func->param_type_.size()) {
+            reportError("Cantidad incorrecta de argumentos para: "+ call->functionName);
         }
+
+        size_t limit =std::min(call->arguments.size(),func->param_type_.size());
+
+        for(size_t i = 0; i < limit; i++){
+            Type argType =analyzeExpr(call->arguments[i]);
+
+            if(argType != func->param_type_[i]){
+                reportError("Tipo incorrecto en argumento de "+ call->functionName);
+            }
+        }
+
         return func->type_;
-        
+    
+    }
+    if(auto* unary = dynamic_cast<UnaryExpr*>(expr)){
+        Type operandType =analyzeExpr(unary->operand);
+
+        if(unary->op == '-'){
+            if(operandType != Type::Int){
+                reportError("Operador - requiere int");
+                return Type::Void;
+            }
+            return Type::Int;
+        }
+
+        if(unary->op== '!'){
+            if(operandType != Type::Bool){
+                reportError("Operador ! requiere bool");
+                return Type::Void;
+            }
+            return Type::Bool;
+        }
+        return Type::Void;
     }
     return Type::Void;
 }
